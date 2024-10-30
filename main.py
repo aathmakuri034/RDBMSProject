@@ -30,11 +30,11 @@ def parse_functional_dependencies() -> List[Tuple[List[str], List[str]]]:
         try:
             # Split at '->' to separate determinant and dependent attributes
             left_side, right_side = user_input.split("->")
-            left_attributes = {attr.strip() for attr in left_side.split(",")}
-            right_attributes = {attr.strip() for attr in right_side.split(",")}
+            left_attributes = [attr.strip() for attr in left_side.split(",")]
+            right_attributes = [attr.strip() for attr in right_side.split(",")]
             
             # Adds the functional dependency into the list of FDs 
-            fds.append(left_attributes, right_attributes)
+            fds.append((left_attributes, right_attributes))
             
         except ValueError:
             print("Invalid format. Please use 'A, B -> C, D' format.")
@@ -96,7 +96,7 @@ def calculate_closure(attributes: Set[str], fds: List[Tuple[List[str], List[str]
 def identify_multivalued_attributes(data: pd.DataFrame) -> Tuple[List[str], Dict[str, List[Tuple[int, str]]]]:
    mv_attributes = []
    violations = {}
-
+   
 
    for column in data.columns:
        multi_valued_indices = []
