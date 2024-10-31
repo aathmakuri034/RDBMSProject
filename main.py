@@ -60,16 +60,21 @@ def parse_functional_dependencies() -> List[Tuple[List[str], List[str]]]:
 def find_mvds(data: pd.DataFrame) -> List[Tuple[List[str], List[str]]]:
     mvds = []
     columns = data.columns
-
+    print("unable to find mvds")
     for lhs_size in range(1, len(columns)):
+        print("Check 1-------------")
         for lhs_comb in combinations(columns, lhs_size):
             lhs_comb = list(lhs_comb)
+            print("check 2 ---------------")
             for rhs_comb in columns:
+                print("check 3----------------------")
                 if rhs_comb not in lhs_comb:
                     lhs_values = data.groupby(lhs_comb)[rhs_comb].nunique()
+                    print("check 4 ------------------------")
                     if all(lhs_values > 1):
                         mvds.append((lhs_comb, [rhs_comb]))
-
+                        print("check 5 ----------------------")
+    print("Got MVDS")
     return mvds
 
 
@@ -94,9 +99,12 @@ def calculate_closure(attributes: Set[str], fds: List[Tuple[List[str], List[str]
 
 
 def identify_multivalued_attributes(data: pd.DataFrame) -> Tuple[List[str], Dict[str, List[Tuple[int, str]]]]:
+   data.columns = data.iloc[0] # sets the first row as the column names
+   data = data.drop(data.index[0]).reset_index(drop=True)
+   
    mv_attributes = []
    violations = {}
-   
+   print("Multivalued attributes Reached")
 
    for column in data.columns:
        multi_valued_indices = []
@@ -422,7 +430,6 @@ def generate_schema(df_list: List[Tuple[pd.DataFrame, List[str]]], primary_keys:
 
 def main():
     data_file = 'testinput.xlsx'
-    # fds_file = 'fds1.txt'
 
     df = read_data(data_file)
     print(f"Initial data: \n{df.head()}\n")
@@ -435,8 +442,8 @@ def main():
     primary_keys = [key.strip().split(',') for key in primary_keys_input.split(';')]
     print(f"Provided Primary Keys: {primary_keys}\n")
 
-    mvds = find_mvds(df)
-    print(f"Identified Multi-valued Dependencies: {mvds}\n")
+    # mvds = find_mvds(df)
+    # print(f"Identified Multi-valued Dependencies: {mvds}\n")
 
     highest_normal_form = input("Enter the highest normalization form (1NF, 2NF, 3NF, BCNF, 4NF, 5NF): ").upper()
 
@@ -462,8 +469,8 @@ def main():
         tables, fds = normalize_to_bcnf(tables, fds, primary_keys)
         print(f"Primary Keys after BCNF: {primary_keys}\n")
 
-    if highest_normal_form in ["4NF", "5NF"]:
-        tables = normalize_to_4nf(tables, mvds, primary_keys)
+    # if highest_normal_form in ["4NF", "5NF"]:
+    #     tables = normalize_to_4nf(tables, mvds, primary_keys)
 
     if highest_normal_form == "5NF":
         tables = normalize_to_5nf(tables, primary_keys)
