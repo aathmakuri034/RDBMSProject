@@ -38,6 +38,8 @@ def parse_functional_dependencies() -> List[Tuple[List[str], List[str]]]:
             
         except ValueError:
             print("Invalid format. Please use 'A, B -> C, D' format.")
+    
+    return fds
 
 
 # def read_fds(file_path: str) -> List[Tuple[List[str], List[str]]]:
@@ -78,6 +80,8 @@ def find_mvds(data: pd.DataFrame) -> List[Tuple[List[str], List[str]]]:
     return mvds
 
 
+def find_mvdss(data: pd.DataFrame):
+    mvds = []
 
 
 
@@ -410,7 +414,8 @@ def generate_schema(df_list: List[Tuple[pd.DataFrame, List[str]]], primary_keys:
    for i, (df, pk) in enumerate(df_list):
        if isinstance(df, pd.DataFrame):
            table_name = f"Table_{i+1}"
-           columns = ", ".join(df.columns)
+           df.columns = df.iloc[0]
+           columns = ", ".join(map(lambda col: str(col), df.columns))
            pk_str = ", ".join(pk)
 
 
