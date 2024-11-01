@@ -82,15 +82,17 @@ def parse_functional_dependencies() -> List[Tuple[List[str], List[str]]]:
 
 def find_mvds(data: pd.DataFrame, fds: List[Tuple[List[str], List[str]]]) -> List[Tuple[List[str], List[str]]]:
     mvds = []
-
+    data.columns = data.iloc[0]
     for lhs, rhs in fds:
         # Check if "|" is in either the LHS or RHS, indicating a multivalued dependency
         if any("|" in attribute for attribute in lhs) or any("|" in attribute for attribute in rhs):
-            # Filter out the "|" to get the actual attribute names
+            # Remove "|" symbols from LHS attributes, if any
             lhs_mvd = [attr.replace("|", "") for attr in lhs]
-            rhs_mvd = [attr.replace("|", "") for attr in rhs]
+            
+            # Split RHS by "|" to handle each part of the MVD separately
+            rhs_mvd = [attr.strip() for attr in "".join(rhs).split("|")]
 
-            # Ensure all attributes exist in DataFrame
+            # Ensure all attributes exist in DataFrame columns
             if not all(attr in data.columns for attr in lhs_mvd):
                 print(f"Warning: Attributes in LHS {lhs_mvd} not found in DataFrame columns.")
                 continue
@@ -98,14 +100,16 @@ def find_mvds(data: pd.DataFrame, fds: List[Tuple[List[str], List[str]]]) -> Lis
                 print(f"Warning: Attributes in RHS {rhs_mvd} not found in DataFrame columns.")
                 continue
 
-            # Check for MVD behavior in the DataFrame
-            if len(rhs_mvd) == 1:
-                rhs_attribute = rhs_mvd[0]
+            # Process each RHS attribute independently to check for MVD behavior
+            for rhs_attribute in rhs_mvd:
                 lhs_values = data.groupby(lhs_mvd)[rhs_attribute].nunique()
-
+                mvds.append((lhs_mvd, [rhs_attribute]))
+                print("Added MVD:", (lhs_mvd, [rhs_attribute]))
                 # MVD condition: each grouping of LHS attributes has multiple RHS values
                 if all(lhs_values > 1):
+                    print("INSIDE--------------------------")
                     mvds.append((lhs_mvd, [rhs_attribute]))
+                    print("Added MVD:", (lhs_mvd, [rhs_attribute]))
 
     return mvds
 
@@ -473,13 +477,10 @@ def main():
     primary_keys_input = input("Enter the primary keys (can be composite, separated by commas, no spaces between; multiple keys separated by semicolons): ")
     primary_keys = [key.strip().split(',') for key in primary_keys_input.split(';')]
     print(f"Provided Primary Keys: {primary_keys}\n")
-
-    print("----------------------- FD -----------------------")
-    print(fds)
     
 
     mvds = find_mvds(df,fds)
-    print(f"Identified Multi-valued Dependencies: {mvds}\n")
+    print(f"Check 2: Identified Multi-valued Dependencies: {mvds}\n")
 
     highest_normal_form = input("Enter the highest normalization form (1NF, 2NF, 3NF, BCNF, 4NF, 5NF): ").upper()
 
