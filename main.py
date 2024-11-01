@@ -29,7 +29,7 @@ def parse_functional_dependencies() -> List[Tuple[List[str], List[str]]]:
         
         try:
             # Split at '->' to separate determinant and dependent attributes
-            left_side, right_side = user_input.split("->")
+            left_side, right_side = user_input.split("-->")
             left_attributes = [attr.strip() for attr in left_side.split(",")]
             right_attributes = [attr.strip() for attr in right_side.split(",")]
             
@@ -59,29 +59,55 @@ def parse_functional_dependencies() -> List[Tuple[List[str], List[str]]]:
 
 
 
-def find_mvds(data: pd.DataFrame) -> List[Tuple[List[str], List[str]]]:
+# def find_mvds(data: pd.DataFrame) -> List[Tuple[List[str], List[str]]]:
+#     mvds = []
+#     columns = data.columns
+#     print("unable to find mvds")
+#     for lhs_size in range(1, len(columns)):
+#         print("Check 1-------------")
+#         for lhs_comb in combinations(columns, lhs_size):
+#             lhs_comb = list(lhs_comb)
+#             print("check 2 ---------------")
+#             for rhs_comb in columns:
+#                 print("check 3----------------------")
+#                 if rhs_comb not in lhs_comb:
+#                     lhs_values = data.groupby(lhs_comb)[rhs_comb].nunique()
+#                     print("check 4 ------------------------")
+#                     if all(lhs_values > 1):
+#                         mvds.append((lhs_comb, [rhs_comb]))
+#                         print("check 5 ----------------------")
+#     print("Got MVDS")
+#     return mvds
+
+
+def find_mvds(data: pd.DataFrame, fds: List[Tuple[List[str], List[str]]]) -> List[Tuple[List[str], List[str]]]:
     mvds = []
-    columns = data.columns
-    print("unable to find mvds")
-    for lhs_size in range(1, len(columns)):
-        print("Check 1-------------")
-        for lhs_comb in combinations(columns, lhs_size):
-            lhs_comb = list(lhs_comb)
-            print("check 2 ---------------")
-            for rhs_comb in columns:
-                print("check 3----------------------")
-                if rhs_comb not in lhs_comb:
-                    lhs_values = data.groupby(lhs_comb)[rhs_comb].nunique()
-                    print("check 4 ------------------------")
-                    if all(lhs_values > 1):
-                        mvds.append((lhs_comb, [rhs_comb]))
-                        print("check 5 ----------------------")
-    print("Got MVDS")
+
+    for lhs, rhs in fds:
+        # Check if "|" is in either the LHS or RHS, indicating a multivalued dependency
+        if any("|" in attribute for attribute in lhs) or any("|" in attribute for attribute in rhs):
+            # Filter out the "|" to get the actual attribute names
+            lhs_mvd = [attr.replace("|", "") for attr in lhs]
+            rhs_mvd = [attr.replace("|", "") for attr in rhs]
+
+            # Ensure all attributes exist in DataFrame
+            if not all(attr in data.columns for attr in lhs_mvd):
+                print(f"Warning: Attributes in LHS {lhs_mvd} not found in DataFrame columns.")
+                continue
+            if not all(attr in data.columns for attr in rhs_mvd):
+                print(f"Warning: Attributes in RHS {rhs_mvd} not found in DataFrame columns.")
+                continue
+
+            # Check for MVD behavior in the DataFrame
+            if len(rhs_mvd) == 1:
+                rhs_attribute = rhs_mvd[0]
+                lhs_values = data.groupby(lhs_mvd)[rhs_attribute].nunique()
+
+                # MVD condition: each grouping of LHS attributes has multiple RHS values
+                if all(lhs_values > 1):
+                    mvds.append((lhs_mvd, [rhs_attribute]))
+
     return mvds
-
-
-def find_mvdss(data: pd.DataFrame):
-    mvds = []
 
 
 
@@ -440,15 +466,20 @@ def main():
     print(f"Initial data: \n{df.head()}\n")
 
     fds = parse_functional_dependencies()
+    # print("Functional Dependencies Below\n" + fds)
     print("Functional Dependencies Processed")
 
     # Get primary keys from the user
-    primary_keys_input = input("Enter the primary keys (can be composite, separated by commas; multiple keys separated by semicolons): ")
+    primary_keys_input = input("Enter the primary keys (can be composite, separated by commas, no spaces between; multiple keys separated by semicolons): ")
     primary_keys = [key.strip().split(',') for key in primary_keys_input.split(';')]
     print(f"Provided Primary Keys: {primary_keys}\n")
 
-    # mvds = find_mvds(df)
-    # print(f"Identified Multi-valued Dependencies: {mvds}\n")
+    print("----------------------- FD -----------------------")
+    print(fds)
+    
+
+    mvds = find_mvds(df,fds)
+    print(f"Identified Multi-valued Dependencies: {mvds}\n")
 
     highest_normal_form = input("Enter the highest normalization form (1NF, 2NF, 3NF, BCNF, 4NF, 5NF): ").upper()
 
@@ -474,8 +505,8 @@ def main():
         tables, fds = normalize_to_bcnf(tables, fds, primary_keys)
         print(f"Primary Keys after BCNF: {primary_keys}\n")
 
-    # if highest_normal_form in ["4NF", "5NF"]:
-    #     tables = normalize_to_4nf(tables, mvds, primary_keys)
+    if highest_normal_form in ["4NF", "5NF"]:
+        tables = normalize_to_4nf(tables, mvds, primary_keys)
 
     if highest_normal_form == "5NF":
         tables = normalize_to_5nf(tables, primary_keys)
