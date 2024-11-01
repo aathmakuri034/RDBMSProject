@@ -42,43 +42,6 @@ def parse_functional_dependencies() -> List[Tuple[List[str], List[str]]]:
     return fds
 
 
-# def read_fds(file_path: str) -> List[Tuple[List[str], List[str]]]:
-#    print(f"Reading functional dependencies from {file_path}...")
-#    with open(file_path, 'r') as file:
-#        lines = file.readlines()
-#    fds = []
-#    for line in lines:
-#        if '->' in line:
-#            parts = line.strip().split('->')
-#            lhs = [attr.strip() for attr in parts[0].split(',')]
-#            rhs = [attr.strip() for attr in parts[1].split(',')]
-#            fds.append((lhs, rhs))
-#    print(f"Functional dependencies read successfully: {fds}")
-#    return fds
-
-
-
-
-# def find_mvds(data: pd.DataFrame) -> List[Tuple[List[str], List[str]]]:
-#     mvds = []
-#     columns = data.columns
-#     print("unable to find mvds")
-#     for lhs_size in range(1, len(columns)):
-#         print("Check 1-------------")
-#         for lhs_comb in combinations(columns, lhs_size):
-#             lhs_comb = list(lhs_comb)
-#             print("check 2 ---------------")
-#             for rhs_comb in columns:
-#                 print("check 3----------------------")
-#                 if rhs_comb not in lhs_comb:
-#                     lhs_values = data.groupby(lhs_comb)[rhs_comb].nunique()
-#                     print("check 4 ------------------------")
-#                     if all(lhs_values > 1):
-#                         mvds.append((lhs_comb, [rhs_comb]))
-#                         print("check 5 ----------------------")
-#     print("Got MVDS")
-#     return mvds
-
 
 def find_mvds(data: pd.DataFrame, fds: List[Tuple[List[str], List[str]]]) -> List[Tuple[List[str], List[str]]]:
     mvds = []
@@ -105,11 +68,6 @@ def find_mvds(data: pd.DataFrame, fds: List[Tuple[List[str], List[str]]]) -> Lis
                 lhs_values = data.groupby(lhs_mvd)[rhs_attribute].nunique()
                 mvds.append((lhs_mvd, [rhs_attribute]))
                 print("Added MVD:", (lhs_mvd, [rhs_attribute]))
-                # MVD condition: each grouping of LHS attributes has multiple RHS values
-                if all(lhs_values > 1):
-                    print("INSIDE--------------------------")
-                    mvds.append((lhs_mvd, [rhs_attribute]))
-                    print("Added MVD:", (lhs_mvd, [rhs_attribute]))
 
     return mvds
 
